@@ -92,13 +92,23 @@ def solve2(p, q, g, M1, r1, c1, M2):
     Zp = Integers(p)
     Zq = Integers(q)
 
-    g = Zp(g)
-    r1 = Zq(g)
+    g  = Zp(g)
+    r1 = Zq(r1)
 
     x1 = ascii2int(M1)
     G1 = g ** x1
-    a1 = hashlib.sha256(int2binascii(G1.lift(), 10)).digest()
-    h1 = g ** binascii2int(a1)
+    a1 = hashlib.sha256(int2binascii(G1.lift(), 2**7)).digest()
 
-    assert c1 == G1 * h1 ** r1, 'c1 == ' + str(c1) + '\nG1 * h1**r1 == ' + str(G1 * h1**r1)
+    x2 = ascii2int(M2)
+    G2 = g ** x2
+    a2 = hashlib.sha256(int2binascii(G2.lift(), 2**7)).digest()
+
+    Q2 = r1 * (x1 * binascii2int(a1)) / (x2 * binascii2int(a2))
+    assert Q2 * (x2 * binascii2int(a2)) == r1 * (x1 * binascii2int(a1))
+
+    return Q2
+
+
+
+    
 
