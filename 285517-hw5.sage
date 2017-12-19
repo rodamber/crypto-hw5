@@ -109,6 +109,25 @@ def solve2(p, q, g, M1, r1, c1, M2):
     return Q2
 
 
+# ==============================================================================
+# Exercise 3
 
-    
 
+def solve3(p, q, g, y, m, n, M1, M2, r1, s1, r2, s2):    
+    Zp = Integers(p)
+    Zq = Integers(q)
+
+    H1 = binascii2int(hashlib.sha256(M1).digest())
+    H2 = binascii2int(hashlib.sha256(M2).digest())
+
+    A = matrix(Zq, [[s2 * m, r2],  [s1, r1]])
+    B = vector(Zq, [H2 - s2 * n, H1])
+
+    k1, x = A.solve_right(B)
+
+    assert Zq(Zp(g) ** k1) == r2, '\n{}\n{}'.format(Zq(Zp(g) ** k1), r2)
+    assert (Zp(g) ** x) == Zp(y), '\n{}\n{}'.format((Zp(g) ** x), Zp(y))
+
+    return x
+
+solve3(p3, q3, g3, y3, m3, n3, M31, M32, r31, s31, r32, s32)
