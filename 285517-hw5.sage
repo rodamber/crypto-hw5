@@ -1,5 +1,10 @@
 from base64 import b64encode, b64decode
+from Crypto.Util import strxor
+from Crypto.Cipher import AES
+
 import hashlib
+import sys
+import socket
 
 
 # ==============================================================================
@@ -33,9 +38,6 @@ def int2ascii(x):
     return "".join(L)
 
 def connect_server(server_name, port, message):
-    import sys
-    import socket
-
     server = (server_name, int(port))
     sock   = socket.create_connection(server)
 
@@ -53,10 +55,75 @@ def connect_server(server_name, port, message):
     sock.close()
     return response
 
-def query(x, port):
-    sciper = '285517'
-    server = 'lasecpc28.epfl.ch'
+def xor(a,b):
+    return strxor.strxor(a,b)
 
+def aes_encrypt(message, key):
+    obj = AES.new(key, AES.MODE_ECB,'')
+    return obj.encrypt(message)
+
+def aes_decrypt(message, key):
+    obj = AES.new(key, AES.MODE_ECB,'')
+    return obj.decrypt(message)
+
+# You can interactively communicate with a server by using this class
+# You can use this class as follows,
+# my_connection = connection_interface(server_to_connect, port_to_connect)
+# my_connection.connect()
+# my_connection.send("blablabla\n")
+# res = my_connection.recv()
+# my_connection.disconnect()
+class connection_interface:
+	def __init__(self, server_name, port):
+		self.target = (server_name, int(port))
+		self.connected = False
+
+	def connect(self):
+		if not self.connected:
+			self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.s.connect(self.target)
+			self.connected = True
+
+	def disconnect(self):
+		if self.connected:
+			self.s.close()
+			self.connected = False
+
+	# Sends a message to the server
+	# The message must be finished with '\n'
+	def send(self, msg):
+		if self.connected:
+			self.s.send(msg)
+		else:
+			raise Exception("You are not connected")
+
+	# we use '\n' as terminator of a message
+	def recv(self):
+		if self.connected:
+			try:
+				buf = self.s.recv(1024)
+				while buf[-1] != '\n':
+					buf += self.s.recv(1024)
+
+				return buf
+			except IndexError:
+				self.connected = False
+				raise Exception("You are disconnected")
+		else:
+			raise Exception("You are not connected")
+
+	def reconnect(self):
+		self.disconnect()
+		self.connect()
+
+
+# ==============================================================================
+# Helpers
+
+sciper = '285517'
+server = 'lasecpc28.epfl.ch'
+
+def query(x, port):
     msg = sciper + ' ' + b64encode(x) + '\n'
     return connect_server(server, port, msg)[:-2]
 
@@ -133,8 +200,61 @@ def solve3(p, q, g, y, m, n, M1, M2, r1, s1, r2, s2):
 # ==============================================================================
 # Exercise 4
 
+ex4_port = 6666
+username = sciper[:6]
+ci = connection_interface(server, ex4_port)
+
+def init():
+    ci.connect()
+    ci.send('0 {}\n'.format(username))
+
+    m, b, session = ci.recv().split()
+    return b64decode(m), b, session
+
+def send(response, session):
+    ci.send('1 {} {} {}\n'.format(username, response, session))
+
+def recv():
+    x = ci.recv().split()
+
+    if len(x) == 1:
+        if x[0] == '2':
+            return 0
+        elif x[0] == '3':
+            return 1
+        else:
+            raise ValueError('x[0] = {}'.format(x[0]))
+    else:
+        if len(x) != 2:
+           raise ValueError('len(x) = {}'.format(len(x)))
+
+        b, session = x
+        return b, session
+
+def guess(x):
+    return int(round(random()))
+
+def interact(a, b, session):
+    for i in range(64):
+        # FIXME: guess
+        send(guess(b), session)
+
+        x = recv()
+        if x in (0, 1) :
+            if x == 0:
+                print('Failure.')
+            else:
+                print('Success.')
+            return x
+      
+        b, session = x
+ 
 def solve4():
-    pass
+    passwd = 'abcdefghijklmnopqrstuvxywz'[:16]
+    m, b, session = init()
+
+    if interact(xor(passwd, m), b, session) == 1:
+         return passwd
 
 
 # ==============================================================================
