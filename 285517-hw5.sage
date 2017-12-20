@@ -236,18 +236,15 @@ def secret(w):
     return aes_encrypt(w + padding, 0)
 
 def res(a, i, ch):
-    if ch == a[2 * i]:
+    if ch == '0':
         return a[2 * i + 1]
     else:
         return a[2 * i]
 
-def guess(x):
-    return int(round(random()))
-
-def interact(a, b, session):
+def interact(a, b, c, session):
     for i in range(64):
-        # FIXME: guess
-        send(guess(b), session)
+        assert(b == c[i])
+        send(res(a, i, b), session)
 
         x = recv()
         if x in (0, 1) :
@@ -260,11 +257,18 @@ def interact(a, b, session):
         b, session = x
 
 def solve4():
-    passwd = 'abcdefghijklmnopqrstuvxywz'[:16]
-    m, b, session = init()
+    with open('passwords.txt', 'r') as f:
+         for i, line in enumerate(f):
+             print i
+             passwd = line[:-1]
 
-    if interact(xor(passwd, m), b, session) == 1:
-         return passwd
+             m, b, session = init()
+
+             a = xor(passwd, m)
+             c = hashlib.sha1(username + m).digest()[:8]
+
+             if interact(a, b, c, session) == 1:
+                 return passwd
 
 
 # ==============================================================================
