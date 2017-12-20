@@ -10,8 +10,8 @@ import socket
 # ==============================================================================
 # Tutorial code
 
-def divideBlocks(string, length): 
-	return [string[0+i:length+i] for i in range(0, len(string), length)]
+def divideBlocks(string, length):
+  return [string[0+i:length+i] for i in range(0, len(string), length)]
 
 def binascii2int(s):
     return reduce(lambda x,y: (x<<8) + ord(y), s, 0 )
@@ -74,47 +74,47 @@ def aes_decrypt(message, key):
 # res = my_connection.recv()
 # my_connection.disconnect()
 class connection_interface:
-	def __init__(self, server_name, port):
-		self.target = (server_name, int(port))
-		self.connected = False
+  def __init__(self, server_name, port):
+    self.target = (server_name, int(port))
+    self.connected = False
 
-	def connect(self):
-		if not self.connected:
-			self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.s.connect(self.target)
-			self.connected = True
+  def connect(self):
+    if not self.connected:
+      self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      self.s.connect(self.target)
+      self.connected = True
 
-	def disconnect(self):
-		if self.connected:
-			self.s.close()
-			self.connected = False
+  def disconnect(self):
+    if self.connected:
+      self.s.close()
+      self.connected = False
 
-	# Sends a message to the server
-	# The message must be finished with '\n'
-	def send(self, msg):
-		if self.connected:
-			self.s.send(msg)
-		else:
-			raise Exception("You are not connected")
+  # Sends a message to the server
+  # The message must be finished with '\n'
+  def send(self, msg):
+    if self.connected:
+      self.s.send(msg)
+    else:
+      raise Exception("You are not connected")
 
-	# we use '\n' as terminator of a message
-	def recv(self):
-		if self.connected:
-			try:
-				buf = self.s.recv(1024)
-				while buf[-1] != '\n':
-					buf += self.s.recv(1024)
+  # we use '\n' as terminator of a message
+  def recv(self):
+    if self.connected:
+      try:
+        buf = self.s.recv(1024)
+        while buf[-1] != '\n':
+          buf += self.s.recv(1024)
 
-				return buf
-			except IndexError:
-				self.connected = False
-				raise Exception("You are disconnected")
-		else:
-			raise Exception("You are not connected")
+        return buf
+      except IndexError:
+        self.connected = False
+        raise Exception("You are disconnected")
+    else:
+      raise Exception("You are not connected")
 
-	def reconnect(self):
-		self.disconnect()
-		self.connect()
+  def reconnect(self):
+    self.disconnect()
+    self.connect()
 
 
 # ==============================================================================
@@ -141,7 +141,7 @@ def pad(m):
 
     return ''.join(map(lambda x: chr(int(x, 2)), divideBlocks(lhs + rhs, 8)))
 
-    
+
 
 def solve1(M1):
     m = M1 + chr(0)
@@ -150,8 +150,8 @@ def solve1(M1):
           m += chr(0)
 
     return query(m, ex1_port)
-    
-    
+
+
 # ==============================================================================
 # Exercise 2
 
@@ -179,7 +179,7 @@ def solve2(p, q, g, M1, r1, c1, M2):
 # ==============================================================================
 # Exercise 3
 
-def solve3(p, q, g, y, m, n, M1, M2, r1, s1, r2, s2):    
+def solve3(p, q, g, y, m, n, M1, M2, r1, s1, r2, s2):
     Zp = Integers(p)
     Zq = Integers(q)
 
@@ -231,6 +231,16 @@ def recv():
         b, session = x
         return b, session
 
+def secret(w):
+    padding = '0' * (16 - len(w))
+    return aes_encrypt(w + padding, 0)
+
+def res(a, i, ch):
+    if ch == a[2 * i]:
+        return a[2 * i + 1]
+    else:
+        return a[2 * i]
+
 def guess(x):
     return int(round(random()))
 
@@ -246,9 +256,9 @@ def interact(a, b, session):
             else:
                 print('Success.')
             return x
-      
+
         b, session = x
- 
+
 def solve4():
     passwd = 'abcdefghijklmnopqrstuvxywz'[:16]
     m, b, session = init()
