@@ -117,16 +117,16 @@ def solve3(p, q, g, y, m, n, M1, M2, r1, s1, r2, s2):
     Zp = Integers(p)
     Zq = Integers(q)
 
-    H1 = binascii2int(hashlib.sha256(M1).digest())
-    H2 = binascii2int(hashlib.sha256(M2).digest())
+    H1 = ascii2int(hashlib.sha256(M1).digest())
+    H2 = ascii2int(hashlib.sha256(M2).digest())
 
-    A = matrix(Zq, [[s2 * m, r2],  [s1, r1]])
+    A = matrix(Zq, [[s2 * m, -r2],  [s1, -r1]])
     B = vector(Zq, [H2 - s2 * n, H1])
 
     k1, x = A.solve_right(B)
 
-    assert Zq(Zp(g) ** k1) == r2, '\n{}\n{}'.format(Zq(Zp(g) ** k1), r2)
-    assert (Zp(g) ** x) == Zp(y), '\n{}\n{}'.format((Zp(g) ** x), Zp(y))
+    assert Zq(Zp(g) ** k1) == r1, '\n{}\n{}'.format(Zq(Zp(g) ** k1), r1)
+    assert (Zp(g) ** x) == y,  '\n{}\n{}'.format((Zp(g) ** x), y)
 
     return x
 
