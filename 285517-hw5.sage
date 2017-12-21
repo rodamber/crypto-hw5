@@ -18,24 +18,17 @@ def query1(x):
     msg = sciper + ' ' + b64encode(x) + '\n'
     return connect_server(server, port1, msg)[:-2]
 
-def pad(m):
-    hash = hashlib.sha256(m).digest()
-
-    lhs = '0' * (2**17 - len(m) * 8 - 12)
-    rhs = ''.join(map(lambda x: '{:b}'.format(ord(x)) , hash))[:12]
-
-    return ''.join(map(lambda x: chr(int(x, 2)), divideBlocks(lhs + rhs, 8)))
-
-
-
 def solve1(M1):
     m = M1 + chr(0)
 
-    while m + pad(m) != M1 + pad(M1):
+    hashM1 = hashlib.sha256(M1).hexdigest()[:3]
+    hashm  = hashlib.sha256(m).hexdigest()[:3]
+
+    while hashm != hashM1:
           m += chr(0)
+          hashm = hashlib.sha256(m).hexdigest()[:3]
 
     return query1(m)
-
 
 # ==============================================================================
 # Exercise 2
