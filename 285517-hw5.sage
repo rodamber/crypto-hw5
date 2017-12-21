@@ -48,8 +48,11 @@ def solve2(p, q, g, M1, r1, c1, M2):
     G2 = g ** x2
     a2 = hashlib.sha256(int2binascii(G2.lift(), 2**7)).digest()
 
-    Q2 = r1 * (x1 * binascii2int(a1)) / (x2 * binascii2int(a2))
-    assert Q2 * (x2 * binascii2int(a2)) == r1 * (x1 * binascii2int(a1))
+    Q2 = (x1 + r1 * binascii2int(a1) - x2) / binascii2int(a2)
+
+    lhs = c21
+    rhs = g ** (x2 + binascii2int(a2) * Q2)
+    assert lhs == rhs, 'lhs = {}\nrhs = {}'.format(lhs, rhs)
 
     return Q2
 
