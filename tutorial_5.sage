@@ -1,6 +1,9 @@
-#####
-#################### Exercises 1 and 5 ##########
-#####    
+from Crypto.Util import strxor
+from Crypto.Cipher import AES
+
+import sys
+import socket
+
 
 def connect_server(server_name, port, message):
     server = (server_name, int(port)) #calling int is required when using Sage
@@ -13,32 +16,6 @@ def connect_server(server_name, port, message):
         response = response+data
     s.close()
     return response
-
-
-#####
-#################### Exercises 1, 2, 3 and 5 ##########
-#####    
-
-#hashing with SHA256
-import hashlib
-
-#getting a digest in ASCII and in hexa
-m='This is a message'
-
-print 'The SHA256 digest for the message "'+m+'" in raw ASCII is', hashlib.sha256(m).digest()
-print 'In hexadacimal, it is', hashlib.sha256(m).hexdigest()
-
-####
-#
-# if you need to manipulate the digest in groups of four bits, 
-# it may be easiest to use .hexdigest(), get the nibbles you need
-# and then reconstruct raw binary ASCII
-#
-
-
-#####
-#################### Exercises 1 and 4 ##########
-#####    
 
 def xor(a,b):
     return strxor.strxor(a,b)
@@ -54,12 +31,6 @@ def aes_encrypt(message, key):
 def aes_decrypt(message, key):
     obj = AES.new(key, AES.MODE_ECB,'')
     return obj.decrypt(message)
-
-
-
-#####
-#################### Exercise 2 ##########
-#####    
 
 #convert binary strings (represented as ascii) to an integer and back
 #
@@ -98,21 +69,9 @@ def int2ascii(x):
                 x=x//(2^8)
         return "".join(L)
 
-
-
-
-
 ####
 #### Exercise 4 #########################
 ####
-
-#opening a file and reading one line at a time,
-#without loading the whole file in the memory.
-with open(filename,'r') as f:
-	for line in f:
-		line.strip()
-		# code you need to do with each line
-
 
 # You can interactively communicate with a server by using this class
 # You can use this class as follows,
@@ -121,6 +80,7 @@ with open(filename,'r') as f:
 # my_connection.send("blablabla\n")
 # res = my_connection.recv()
 # my_connection.disconnect()
+
 class connection_interface:
 	def __init__(self, server_name, port):
 		self.target = (server_name, int(port))
@@ -277,8 +237,4 @@ def minumumTree(l,tree):
 					G.append(str(l)+'-'+str(i+1))
 		#now we run the algorithm for the next level	
 		return G+minumumTree(l+1,tree)
-
-
-
-
 

@@ -1,137 +1,22 @@
+load('285517/285517-parameters.sage')
+load('tutorial_5.sage')
+
 from base64 import b64encode, b64decode
-from Crypto.Util import strxor
-from Crypto.Cipher import AES
 
 import hashlib
-import sys
-import socket
 
 
-# ==============================================================================
-# Tutorial code
-
-def divideBlocks(string, length):
-  return [string[0+i:length+i] for i in range(0, len(string), length)]
-
-def binascii2int(s):
-    return reduce(lambda x,y: (x<<8) + ord(y), s, 0 )
-
-def int2binascii(x,width):
-    L=[]
-    for i in xrange(width):
-        # always take least significant 8 bits, convert to ASCII and then shift right
-        L.append( chr(x & 0xff) )
-        x=x>>8
-    #revert to have correct endian
-    return "".join(L[::-1])
-
-def ascii2int(s):
-    # the string has to be reverted so that s[0] gets multiplied by 2^(8*0)
-    return reduce(lambda x,y: (x<<8) + ord(y), s[::-1], 0 )
-
-def int2ascii(x):
-    L=[]
-    while(x>0):
-        # always take least significant 8 bits, convert to ASCII and then shift right
-        L.append( chr(x & 0xff) )
-        x=x>>8
-    return "".join(L)
-
-def connect_server(server_name, port, message):
-    server = (server_name, int(port))
-    sock   = socket.create_connection(server)
-
-    sock.send(message)
-    response=''
-
-    while True:
-        data = sock.recv(9000)
-
-        if not data:
-            break
-
-        response += data
-
-    sock.close()
-    return response
-
-def xor(a,b):
-    return strxor.strxor(a,b)
-
-def aes_encrypt(message, key):
-    obj = AES.new(key, AES.MODE_ECB,'')
-    return obj.encrypt(message)
-
-def aes_decrypt(message, key):
-    obj = AES.new(key, AES.MODE_ECB,'')
-    return obj.decrypt(message)
-
-# You can interactively communicate with a server by using this class
-# You can use this class as follows,
-# my_connection = connection_interface(server_to_connect, port_to_connect)
-# my_connection.connect()
-# my_connection.send("blablabla\n")
-# res = my_connection.recv()
-# my_connection.disconnect()
-class connection_interface:
-  def __init__(self, server_name, port):
-    self.target = (server_name, int(port))
-    self.connected = False
-
-  def connect(self):
-    if not self.connected:
-      self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      self.s.connect(self.target)
-      self.connected = True
-
-  def disconnect(self):
-    if self.connected:
-      self.s.close()
-      self.connected = False
-
-  # Sends a message to the server
-  # The message must be finished with '\n'
-  def send(self, msg):
-    if self.connected:
-      self.s.send(msg)
-    else:
-      raise Exception("You are not connected")
-
-  # we use '\n' as terminator of a message
-  def recv(self):
-    if self.connected:
-      try:
-        buf = self.s.recv(1024)
-        while buf[-1] != '\n':
-          buf += self.s.recv(1024)
-
-        return buf
-      except IndexError:
-        self.connected = False
-        raise Exception("You are disconnected")
-    else:
-      raise Exception("You are not connected")
-
-  def reconnect(self):
-    self.disconnect()
-    self.connect()
-
-
-# ==============================================================================
-# Helpers
-
-sciper = '285517'
+sciper = str(Sciper)
 server = 'lasecpc28.epfl.ch'
-
-def query(x, port):
-    msg = sciper + ' ' + b64encode(x) + '\n'
-    return connect_server(server, port, msg)[:-2]
-
 
 # ==============================================================================
 # Exercise 1
 
-ex1_port = 5555
+port1 = 5555
+
+def query1(x):
+    msg = sciper + ' ' + b64encode(x) + '\n'
+    return connect_server(server, port1, msg)[:-2]
 
 def pad(m):
     hash = hashlib.sha256(m).digest()
@@ -149,7 +34,7 @@ def solve1(M1):
     while m + pad(m) != M1 + pad(M1):
           m += chr(0)
 
-    return query(m, ex1_port)
+    return query1(m)
 
 
 # ==============================================================================
@@ -200,9 +85,9 @@ def solve3(p, q, g, y, m, n, M1, M2, r1, s1, r2, s2):
 # ==============================================================================
 # Exercise 4
 
-ex4_port = 6666
+port4 = 6666
 username = sciper[:6]
-ci = connection_interface(server, ex4_port)
+ci = connection_interface(server, port4)
 
 def init():
     ci.connect()
