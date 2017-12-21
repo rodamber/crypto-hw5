@@ -243,7 +243,7 @@ def res(a, i, ch):
 
 def interact(a, b, c, session):
     for i in range(64):
-        assert(b == c[i])
+        assert(b == a[2 * i + c[i]])
         send(res(a, i, b), session)
 
         x = recv()
@@ -256,6 +256,9 @@ def interact(a, b, c, session):
 
         b, session = x
 
+def ascii2bin(x):
+    return ''.join(map(lambda y: '{0:08b}'.format(ord(y)), x))
+
 def solve4():
     with open('passwords.txt', 'r') as f:
          for i, line in enumerate(f):
@@ -264,11 +267,45 @@ def solve4():
 
              m, b, session = init()
 
+             # FIXME: We're treating 'a' as if it was a binary string, but it is
+             # an ascii string!
              a = xor(passwd, m)
              c = hashlib.sha1(username + m).digest()[:8]
 
              if interact(a, b, c, session) == 1:
                  return passwd
+
+# We know $c$, so we know every $k$, i.e., for every $i$ we know the index in $a$
+# of the bit $ch_i$.
+
+# When the server proposes a challenge $ch_i = a_{2i + c_i}$, we make a guess.
+# Let's say our guess is one.
+
+# If we got it right, then $a_{2i + 1 - c_i} = 1$.
+# If we got it wrong, then $a_{2i + 1 - c_i} = 0$.
+
+# I.e., $a_{2i + 1 - c_i} = 1_{guess is right}$, where $1$ is the indicator
+# function.
+
+# With this, we have both $a_k = ch_i$ and $a_{2i + 1 - c_i}$ (which is the other
+# one of the two).
+
+# After this, we just have to xor the two bits we got with the corresponding bits
+# in $m$, to get two bits of the shares secret $s$.
+
+# After we have $s$ we just have to search for a key $w$ (a password) in passwords.txt
+# such that when we decrypt $0$ with $w$ we get $s$ as result.
+
+# Note that after each time you fail you need to restart the protocol and use the
+# partial info you have about $s$ in order to get to the later challenges.
+
+
+# Algorithm:
+#   i <- 0
+#   s <- '0' * 128
+
+#   while i < 64 do
+#     c <- trunc_64(sha1(username||m))
 
 
 # ==============================================================================
