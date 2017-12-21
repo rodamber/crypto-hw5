@@ -85,11 +85,22 @@ port4 = 6666
 username = sciper[:6]
 ci = connection_interface(server, port4)
 
+def ascii2bin(x):
+    return ''.join(map(lambda y: '{0:08b}'.format(ord(y)), x))
+
+def bin2ascii(x):
+    return ''.join(map(lambda y: chr(int(y, 2)), divideBlocks(x, 8)))
+
+def indicator(p):
+    if p: return '1'
+    else: return '0'
+
 def init():
     ci.connect()
     ci.send('0 {}\n'.format(username))
 
     m, b, session = ci.recv().split()
+
     return b64decode(m), b, session
 
 def send(response, session):
@@ -112,81 +123,62 @@ def recv():
         b, session = x
         return b, session
 
-def secret(w):
-    padding = '0' * (16 - len(w))
-    return aes_encrypt(w + padding, 0)
+def guess(c, i, s):
+    # If we already know the correct answer we give it. Otherwise, just output 1.
 
-def res(a, i, ch):
-    if ch == '0':
-        return a[2 * i + 1]
+    x = s[2 * i + 1 - c[i]]
+
+    if x is not None:
+        return x
     else:
-        return a[2 * i]
+        return '1'
 
-def interact(a, b, c, session):
-    for i in range(64):
-        assert(b == a[2 * i + c[i]])
-        send(res(a, i, b), session)
-
-        x = recv()
-        if x in (0, 1) :
-            if x == 0:
-                print('Failure.')
-            else:
-                print('Success.')
-            return x
-
-        b, session = x
-
-def ascii2bin(x):
-    return ''.join(map(lambda y: '{0:08b}'.format(ord(y)), x))
+def pad(w):
+    padding = '0' * ((128 / 8) - len(w))
+    return w + padding
 
 def solve4():
+    s = [None] * 128
+
+    while s[-1] is None:
+        m, b, session = init()
+
+        c = map(int, ascii2bin(hashlib.sha1(username + m).digest()[:64 / 8]))
+        m = ascii2bin(m)
+
+        send(guess(c, 1, s), session)
+        for i in range(1, 64):
+            print(i)
+
+            x = recv()
+
+            if x == 1: # we got in!
+                print('got in!')
+                break
+
+            j = 2 * i + 1 - c[i]
+            k = 2 * i + c[i]
+
+            s[j] = xor(indicator(x != 0), m[j])
+            s[k] = xor(b, m[k])
+
+            if x == 0: # guess is incorrect
+                break
+            else: # guess is correct and we passed to the next round
+                b, session = x
+                send(guess(c, i, s), session)
+
+
+    print('Should see this right after getting in.')
+
+    s = bin2ascii(''.join(s))
+
     with open('passwords.txt', 'r') as f:
-         for i, line in enumerate(f):
-             print i
-             passwd = line[:-1]
+        for line in f:
+            w = line.strip()
 
-             m, b, session = init()
-
-             # FIXME: We're treating 'a' as if it was a binary string, but it is
-             # an ascii string!
-             a = xor(passwd, m)
-             c = hashlib.sha1(username + m).digest()[:8]
-
-             if interact(a, b, c, session) == 1:
-                 return passwd
-
-# We know $c$, so we know every $k$, i.e., for every $i$ we know the index in $a$
-# of the bit $ch_i$.
-
-# When the server proposes a challenge $ch_i = a_{2i + c_i}$, we make a guess.
-# Let's say our guess is one.
-
-# If we got it right, then $a_{2i + 1 - c_i} = 1$.
-# If we got it wrong, then $a_{2i + 1 - c_i} = 0$.
-
-# I.e., $a_{2i + 1 - c_i} = 1_{guess is right}$, where $1$ is the indicator
-# function.
-
-# With this, we have both $a_k = ch_i$ and $a_{2i + 1 - c_i}$ (which is the other
-# one of the two).
-
-# After this, we just have to xor the two bits we got with the corresponding bits
-# in $m$, to get two bits of the shares secret $s$.
-
-# After we have $s$ we just have to search for a key $w$ (a password) in passwords.txt
-# such that when we decrypt $0$ with $w$ we get $s$ as result.
-
-# Note that after each time you fail you need to restart the protocol and use the
-# partial info you have about $s$ in order to get to the later challenges.
-
-
-# Algorithm:
-#   i <- 0
-#   s <- '0' * 128
-
-#   while i < 64 do
-#     c <- trunc_64(sha1(username||m))
+            if aes_decrypt('0', pad(w)) == s:
+                return s
 
 
 # ==============================================================================
@@ -233,7 +225,8 @@ def parse(q):
 bad_node = parse_node('17-0 is MGL2B1VrGxSaOLK7XBoXxUDgEyp2IlYAN717JxwMj/o=')
 
 def solve5():
-    tree = hashtree(genleafs(open('password_DB.txt', 'r')), [])
+    with open('password_DB.txt', 'r') as f:
+        tree = hashtree(genleafs(f), [])
 
     def valid(n):
         return n.value == tree[n.level][n.index].value
