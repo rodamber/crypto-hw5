@@ -196,5 +196,67 @@ def solve4():
 # ==============================================================================
 # Exercise 5
 
+port5 = 7777
+
+def query5(server_ix, file_ix=None):
+    if file_ix is None:
+        msg = '{} {} []\n'.format(sciper, server_ix)
+    else:
+        msg = '{} {} [{}]\n'.format(sciper, server_ix, file_ix)
+
+    return connect_server(server, port5, msg)[:-2]
+
+def parse_node(x):
+    y = x.split(' is ')
+    w = y[0].split('-')
+
+    value = b64decode(y[1])
+    level = int(w[0])
+    index = int(w[1])
+
+    return node(value, level, index, 1)
+
+def parse(q):
+    x = q.strip('[]').split(', ')
+    y = map(lambda z: z.strip('\''), x)
+    return map(parse_node, y)
+
+# Running ``for i in range(5): query5(i)'' we can see by introspection that the
+# server with the modified block is server number 1. Moreover, the file block is
+# on the "left" side of the tree. (We can see that by noting that node 17-0 from
+# server 1 has a different value from all the other 17-0 nodes, while the 17-1
+# nodes are equal in all servers).
+#
+# sage: for i in range(5): query5(i)
+# "['17-0 is G0VmaRL2S76lkiHB4MKTFqn5BHLQMfhQMf/HKRHql+M=', '17-1 is 3AxJl/g0SC+YB5j8+IKUT8oG7ftxp6v9xVH5pSTJaPg=']"
+# "['17-0 is MGL2B1VrGxSaOLK7XBoXxUDgEyp2IlYAN717JxwMj/o=', '17-1 is 3AxJl/g0SC+YB5j8+IKUT8oG7ftxp6v9xVH5pSTJaPg=']"
+# "['17-0 is G0VmaRL2S76lkiHB4MKTFqn5BHLQMfhQMf/HKRHql+M=', '17-1 is 3AxJl/g0SC+YB5j8+IKUT8oG7ftxp6v9xVH5pSTJaPg=']"
+# "['17-0 is G0VmaRL2S76lkiHB4MKTFqn5BHLQMfhQMf/HKRHql+M=', '17-1 is 3AxJl/g0SC+YB5j8+IKUT8oG7ftxp6v9xVH5pSTJaPg=']"
+# "['17-0 is G0VmaRL2S76lkiHB4MKTFqn5BHLQMfhQMf/HKRHql+M=', '17-1 is 3AxJl/g0SC+YB5j8+IKUT8oG7ftxp6v9xVH5pSTJaPg=']"
+
+bad_node = parse_node('17-0 is MGL2B1VrGxSaOLK7XBoXxUDgEyp2IlYAN717JxwMj/o=')
+
 def solve5():
-    pass
+    tree = hashtree(genleafs(open('password_DB.txt', 'r')), [])
+
+    def valid(n):
+        return n.value == tree[n.level][n.index].value
+
+    def leftmost(n):
+        ix = (2**n.level) * n.index
+        return tree[0][ix]
+
+    def wrong_ix(n):
+        if n.level == 0:
+            return n.index
+
+        m  = leftmost(n)
+        ns = parse(query5(server_ix=1, file_ix=m.index))
+
+        for n_ in ns:
+            if not valid(n_):
+                return wrong_ix(n_)
+
+        return m.index + 1
+
+    return wrong_ix(bad_node)
